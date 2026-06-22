@@ -458,6 +458,55 @@
             }
         }
 
+        function generatePlatformLegend(elementId, platformObj, platformBreakdown) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            
+            let total = 0;
+            Object.values(platformObj).forEach(val => total += val);
+
+            if (total === 0 || Object.keys(platformObj).length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center text-xs py-2">Belum ada data distribusi</p>';
+                return;
+            }
+
+            let html = '<ul class="space-y-2 w-full mt-2">';
+            let index = 0;
+            for (const [key, value] of Object.entries(platformObj)) {
+                let percentage = ((value / total) * 100).toFixed(1);
+                let color = chartColors[index % chartColors.length];
+                let breakdown = platformBreakdown[key] || { saham: 0, sukuk: 0 };
+                let sahamPct = breakdown.saham > 0 ? ((breakdown.saham / value) * 100).toFixed(1) : 0;
+                let sukukPct = breakdown.sukuk > 0 ? ((breakdown.sukuk / value) * 100).toFixed(1) : 0;
+                html += `
+                    <li class="text-[11px]">
+                        <div class="flex items-center justify-between text-gray-600">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color}"></span>
+                                <span class="truncate font-medium">${key}</span>
+                            </div>
+                            <span class="font-semibold text-gray-900 ml-2">
+                                ${formatRupiah(value)} <span class="text-gray-400 font-normal text-[10px]">(${percentage}%)</span>
+                            </span>
+                        </div>
+                        <div class="flex gap-3 mt-1 text-[10px] text-gray-500 pl-4">
+                            <span>Saham: <span class="font-medium text-gray-700">${formatRupiah(breakdown.saham)} (${sahamPct}%)</span></span>
+                            <span>Sukuk: <span class="font-medium text-gray-700">${formatRupiah(breakdown.sukuk)} (${sukukPct}%)</span></span>
+                        </div>
+                    </li>
+                `;
+                index++;
+            }
+            html += `
+                <li class="flex items-center justify-between text-xs text-gray-900 border-t border-gray-200 pt-1.5 mt-1.5 font-bold">
+                    <span>Total Kategori</span>
+                    <span>${formatRupiah(total)}</span>
+                </li>
+            `;
+            html += '</ul>';
+            container.innerHTML = html;
+        }
+
         function generateTextLegend(elementId, dataObj) {
             const container = document.getElementById(elementId);
             container.innerHTML = '';
@@ -518,7 +567,7 @@
             };
         }
 
-        function renderAllCharts(platformObj, ptObj, dompetObj, cuanObj) {
+        function renderAllCharts(platformObj, ptObj, dompetObj, cuanObj, platformBreakdown) {
             Object.keys(charts).forEach(key => { if(charts[key]) charts[key].destroy(); });
 
             charts.platform = new Chart(document.getElementById('chartPlatform').getContext('2d'), buatKonfigurasiDoughnut(Object.keys(platformObj), Object.values(platformObj)));
@@ -526,7 +575,7 @@
             charts.dompet = new Chart(document.getElementById('chartDompet').getContext('2d'), buatKonfigurasiDoughnut(Object.keys(dompetObj), Object.values(dompetObj)));
             charts.keuntungan = new Chart(document.getElementById('chartKeuntungan').getContext('2d'), buatKonfigurasiDoughnut(Object.keys(cuanObj), Object.values(cuanObj)));
 
-            generateTextLegend('legendPlatform', platformObj);
+            generatePlatformLegend('legendPlatform', platformObj, platformBreakdown);
             generateTextLegend('legendPT', ptObj);
             generateTextLegend('legendDompet', dompetObj);
             generateTextLegend('legendKeuntungan', cuanObj);
@@ -618,6 +667,7 @@
             let platformData = { 'Shafiq': 0, 'LBS': 0 };
             let ptData = {};
             let keuntunganSukukData = {};
+            let platformBreakdown = {};
 
             dataInvestasi.forEach(inv => {
                 let cuan = kalkulasiCuanSukuk(inv.nominal, inv.roi, inv.jenis, inv.tenor);
@@ -626,6 +676,13 @@
 
                 if(platformData[inv.platform] !== undefined) platformData[inv.platform] += inv.nominal;
                 ptData[inv.perusahaan] = (ptData[inv.perusahaan] || 0) + inv.nominal;
+
+                platformBreakdown[inv.platform] = platformBreakdown[inv.platform] || { saham: 0, sukuk: 0 };
+                if(inv.jenis === 'Saham') {
+                    platformBreakdown[inv.platform].saham += inv.nominal;
+                } else {
+                    platformBreakdown[inv.platform].sukuk += inv.nominal;
+                }
 
                 if(inv.jenis === 'Sukuk' && cuan > 0) {
                     keuntunganSukukData[inv.perusahaan] = (keuntunganSukukData[inv.perusahaan] || 0) + cuan;
@@ -641,7 +698,7 @@
             document.getElementById('total-cuan').innerText = formatRupiah(totalCuanSukukAll);
 
             // Perbarui visual diagram
-            renderAllCharts(platformData, ptData, alokasiDompetMap, keuntunganSukukData);
+            renderAllCharts(platformData, ptData, alokasiDompetMap, keuntunganSukukData, platformBreakdown);
             
             // Render Tabel Investasi dengan memperhitungkan filter aktif
             renderTabelInvestasi();
