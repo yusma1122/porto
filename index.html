@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portofolio Investasi Minimalis Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto space-y-8">
+        
+        <header class="mb-8 border-b pb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Dashboard Investasi</h1>
+                <p class="text-gray-500 text-sm mt-1">Manajemen Portofolio, Sumber Dana & Analisis ROI (Tanpa Backend)</p>
+            </div>
+            
+            <div class="bg-white p-3 rounded-lg border border-gray-200 flex items-center gap-3 shadow-sm text-sm">
+                <span class="font-medium text-gray-600">Alat Device:</span>
+                <button onclick="exportData()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded font-medium transition">
+                    Export JSON
+                </button>
+                <label class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded font-medium cursor-pointer transition">
+                    Import JSON
+                    <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)">
+                </label>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-1 space-y-8">
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-semibold mb-4" id="title-form-dompet">Tambah Sumber Dana</h2>
+                    <form id="form-dompet" class="space-y-4">
+                        <input type="hidden" id="dompet-id">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Nama Dompet</label>
+                            <input type="text" id="dompet-nama" required class="mt-1 block w-full rounded-md border-gray-300 border p-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Contoh: RDN BCA">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Nominal Awal (Rp)</label>
+                            <input type="number" id="dompet-nominal" required class="mt-1 block w-full rounded-md border-gray-300 border p-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Catatan</label>
+                            <textarea id="dompet-catatan" class="mt-1 block w-full rounded-md border-gray-300 border p-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" id="btn-submit-dompet" class="w-full bg-gray-900 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition text-sm font-medium">Simpan Dompet</button>
+                            <button type="button" id="btn-batal-dompet" onclick="batalEditDompet()" class="hidden w-full bg-red-100 text-red-600 py-2 px-4 rounded-md hover:bg-red-200 transition text-sm font-medium">Batal</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-semibold mb-4" id="title-form-inv">Tambah Investasi</h2>
+                    <form id="form-investasi" class="space-y-4">
+                        <input type="hidden" id="inv-id">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Nama Investasi</label>
+                            <input type="text" id="inv-nama" required class="mt-1 block w-full rounded-md border-gray-300 border p-2 sm:text-sm" placeholder="Contoh: Sukuk Mudharabah I">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Nama Perusahaan / PT</label>
+                            <input type="text" id="inv-perusahaan" required class="mt-1 block w-full rounded-md border-gray-300 border p-2 sm:text-sm" placeholder="Contoh: PT Maju Bersama">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Platform</label>
+                            <select id="inv-platform" class="mt-1 block w-full rounded-md border-gray-300 border p-2 sm:text-sm">
+                                <option value="Shafiq">Shafiq</option>
+                                <option value="LBS">LBS</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Jenis Investasi</label>
+                            <select id="inv-jenis" class="mt-1 block w-full rounded-md border-gray-300 border p-2 sm:text-sm">
+                                <option value="Saham">Saham</option>
+                                <option value="Sukuk">Sukuk</option>
+                            </select>
+                        </div>
+                        
+                        <div id="container-tenor" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700">Tenor (Bulan)</label>
+                            <select id="inv-tenor" class="mt-1 block w-full rounded-md border-gray-300 border p-2 sm:text-sm">
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">ROI Per Tahun (%)</label>
+                            <input type="number" step="0.01" id="inv-roi" required class="mt-1 block w-full rounded-md border-gray-300 border p-2 sm:text-sm" placeholder="Contoh: 15">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Sumber Dana</label>
+                            <select id="inv-sumber" required class="mt-1 block w-full rounded-md border-gray-300 border p-2 sm:text-sm">
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Tanggal Transaksi</label>
+                            <input type="date" id="inv-tanggal" required class="mt-1 block w-full rounded-md border-gray-300 border p-2 sm:text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Nominal Investasi (Rp)</label>
+                            <input type="number" id="inv-nominal" required class="mt-1 block w-full rounded-md border-gray-300 border p-2 sm:text-sm">
+                        </div>
+
+                        <div id="profit-preview" class="bg-gray-50 p-3 rounded-lg text-xs font-medium text-gray-600 hidden border border-dashed">
+                            Estimasi Imbal Hasil Sukuk: <span id="text-profit-preview" class="text-blue-600 font-bold">Rp 0</span>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button type="submit" id="btn-submit-inv" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition text-sm font-medium">Simpan Investasi</button>
+                            <button type="button" id="btn-batal-inv" onclick="batalEditInvestasi()" class="hidden w-full bg-red-100 text-red-600 py-2 px-4 rounded-md hover:bg-red-200 transition text-sm font-medium">Batal</button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+
+            <div class="lg:col-span-2 space-y-8">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                        <p class="text-xs text-gray-500 font-medium">Total Sisa Saldo Dompet</p>
+                        <p class="text-xl font-bold text-gray-900" id="total-dompet">Rp 0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                        <p class="text-xs text-blue-600 font-medium">Total Pokok Investasi</p>
+                        <p class="text-xl font-bold text-blue-600" id="total-investasi">Rp 0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                        <p class="text-xs text-green-600 font-medium">Total Est. Cuan Sukuk</p>
+                        <p class="text-xl font-bold text-green-600" id="total-cuan">Rp 0</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-6">
+                    <h2 class="text-lg font-semibold text-gray-900 border-b pb-2">Analisis Visual & Rincian Nilai</h2>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                        <div class="flex flex-col items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <span class="text-xs font-semibold text-gray-500 mb-2">Porsi Berdasarkan Platform</span>
+                            <div class="w-full max-w-[160px]"><canvas id="chartPlatform"></canvas></div>
+                            <div id="legendPlatform" class="mt-4 text-xs w-full border-t pt-2"></div>
+                        </div>
+
+                        <div class="flex flex-col items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <span class="text-xs font-semibold text-gray-500 mb-2">Alokasi Dana Per Perusahaan (PT)</span>
+                            <div class="w-full max-w-[160px]"><canvas id="chartPT"></canvas></div>
+                            <div id="legendPT" class="mt-4 text-xs w-full border-t pt-2"></div>
+                        </div>
+
+                        <div class="flex flex-col items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <span class="text-xs font-semibold text-gray-500 mb-2">Dana Terpakai Per Sumber Dana</span>
+                            <div class="w-full max-w-[160px]"><canvas id="chartDompet"></canvas></div>
+                            <div id="legendDompet" class="mt-4 text-xs w-full border-t pt-2"></div>
+                        </div>
+
+                        <div class="flex flex-col items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <span class="text-xs font-semibold text-gray-500 mb-2">Distribusi Cuan Sukuk Per PT</span>
+                            <div class="w-full max-w-[160px]"><canvas id="chartKeuntungan"></canvas></div>
+                            <div id="legendKeuntungan" class="mt-4 text-xs w-full border-t pt-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+                    <h2 class="text-lg font-semibold mb-4">Daftar Sumber Dana</h2>
+                    <table class="min-w-full text-sm text-left">
+                        <thead class="bg-gray-50 text-gray-600 font-medium border-b">
+                            <tr>
+                                <th class="py-3 px-4">Nama Dompet</th>
+                                <th class="py-3 px-4">Sisa Saldo</th>
+                                <th class="py-3 px-4">Catatan</th>
+                                <th class="py-3 px-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-dompet" class="divide-y divide-gray-100">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+                    
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+                        <h2 class="text-lg font-semibold text-gray-900">Histori Investasi & Yield</h2>
+                        
+                        <div class="flex gap-2">
+                            <select id="filter-platform" onchange="renderTabelInvestasi()" class="block w-full sm:w-auto rounded-md border-gray-300 border p-1.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-gray-700 bg-gray-50">
+                                <option value="Semua">Semua Platform</option>
+                                <option value="Shafiq">Shafiq</option>
+                                <option value="LBS">LBS</option>
+                            </select>
+                            <select id="filter-jenis" onchange="renderTabelInvestasi()" class="block w-full sm:w-auto rounded-md border-gray-300 border p-1.5 text-sm focus:ring-blue-500 focus:border-blue-500 text-gray-700 bg-gray-50">
+                                <option value="Semua">Semua Jenis</option>
+                                <option value="Sukuk">Sukuk</option>
+                                <option value="Saham">Saham</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <table class="min-w-full text-sm text-left">
+                        <thead class="bg-gray-50 text-gray-600 font-medium border-b">
+                            <tr>
+                                <th class="py-3 px-4">Tanggal</th>
+                                <th class="py-3 px-4">Investasi (PT)</th>
+                                <th class="py-3 px-4">Platform / Jenis</th>
+                                <th class="py-3 px-4">ROI / Tenor</th>
+                                <th class="py-3 px-4">Pokok</th>
+                                <th class="py-3 px-4">Est. Cuan</th>
+                                <th class="py-3 px-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-investasi" class="divide-y divide-gray-100">
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dataDompet = JSON.parse(localStorage.getItem('dompet')) || [];
+        let dataInvestasi = JSON.parse(localStorage.getItem('investasi')) || [];
+        
+        let charts = { platform: null, pt: null, dompet: null, keuntungan: null };
+        const chartColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f43f5e', '#14b8a6'];
+
+        const formatRupiah = (angka) => {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        };
+
+        const selectTenor = document.getElementById('inv-tenor');
+        for(let i = 1; i <= 24; i++) {
+            let option = document.createElement('option');
+            option.value = i;
+            option.text = i + ' Bulan';
+            selectTenor.appendChild(option);
+        }
+
+        function kalkulasiCuanSukuk(nominal, roi, jenis, tenorBulan) {
+            if(jenis !== 'Sukuk') return 0;
+            return Math.round(nominal * (parseFloat(roi) / 100) * (parseInt(tenorBulan) / 12));
+        }
+
+        function checkWidgetPreview() {
+            const jenis = document.getElementById('inv-jenis').value;
+            const nominal = parseFloat(document.getElementById('inv-nominal').value) || 0;
+            const roi = parseFloat(document.getElementById('inv-roi').value) || 0;
+            const tenor = parseInt(document.getElementById('inv-tenor').value) || 1;
+            const containerTenor = document.getElementById('container-tenor');
+            const widget = document.getElementById('profit-preview');
+
+            if(jenis === 'Sukuk') {
+                containerTenor.classList.remove('hidden');
+                widget.classList.remove('hidden');
+                let hasilCuan = kalkulasiCuanSukuk(nominal, roi, jenis, tenor);
+                document.getElementById('text-profit-preview').innerText = formatRupiah(hasilCuan);
+            } else {
+                containerTenor.classList.add('hidden');
+                widget.classList.add('hidden');
+            }
+        }
+
+        ['inv-jenis', 'inv-nominal', 'inv-roi', 'inv-tenor'].forEach(id => {
+            document.getElementById(id).addEventListener('change', checkWidgetPreview);
+            document.getElementById(id).addEventListener('input', checkWidgetPreview);
+        });
+
+        function exportData() {
+            if (dataDompet.length === 0 && dataInvestasi.length === 0) {
+                alert('Tidak ada data untuk di-export.');
+                return;
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ dompet: dataDompet, investasi: dataInvestasi }, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "portofolio_backup.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    if (parsedData.dompet && parsedData.investasi) {
+                        if (confirm('Import data akan menimpa data device ini. Lanjutkan?')) {
+                            dataDompet = parsedData.dompet;
+                            dataInvestasi = parsedData.investasi;
+                            simpanData();
+                            updateUI();
+                            alert('Data sukses di-import!');
+                        }
+                    } else { alert('Format cadangan file tidak cocok.'); }
+                } catch (err) { alert('Gagal membaca file JSON.'); }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        document.getElementById('form-dompet').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const idForm = document.getElementById('dompet-id').value;
+            const nama = document.getElementById('dompet-nama').value;
+            const nominal = parseFloat(document.getElementById('dompet-nominal').value);
+            const catatan = document.getElementById('dompet-catatan').value;
+
+            if(idForm) {
+                const index = dataDompet.findIndex(d => d.id == idForm);
+                dataDompet[index].nama = nama;
+                dataDompet[index].nominal = nominal;
+                dataDompet[index].catatan = catatan;
+            } else {
+                dataDompet.push({ id: Date.now(), nama, nominal, catatan });
+            }
+            simpanData(); batalEditDompet(); updateUI();
+        });
+
+        function editDompet(id) {
+            const dompet = dataDompet.find(d => d.id == id);
+            document.getElementById('dompet-id').value = dompet.id;
+            document.getElementById('dompet-nama').value = dompet.nama;
+            document.getElementById('dompet-nominal').value = dompet.nominal;
+            document.getElementById('dompet-catatan').value = dompet.catatan;
+            document.getElementById('title-form-dompet').innerText = "Edit Sumber Dana";
+            document.getElementById('btn-submit-dompet').innerText = "Update Dompet";
+            document.getElementById('btn-batal-dompet').classList.remove('hidden');
+        }
+
+        function hapusDompet(id) {
+            if(confirm('Yakin ingin menghapus dompet ini?')) {
+                dataDompet = dataDompet.filter(d => d.id != id);
+                simpanData(); updateUI();
+            }
+        }
+
+        function batalEditDompet() {
+            document.getElementById('form-dompet').reset();
+            document.getElementById('dompet-id').value = '';
+            document.getElementById('title-form-dompet').innerText = "Tambah Sumber Dana";
+            document.getElementById('btn-submit-dompet').innerText = "Simpan Dompet";
+            document.getElementById('btn-batal-dompet').classList.add('hidden');
+        }
+
+        document.getElementById('form-investasi').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const idForm = document.getElementById('inv-id').value;
+            const nama = document.getElementById('inv-nama').value;
+            const perusahaan = document.getElementById('inv-perusahaan').value;
+            const platform = document.getElementById('inv-platform').value;
+            const jenis = document.getElementById('inv-jenis').value;
+            const tenor = jenis === 'Sukuk' ? document.getElementById('inv-tenor').value : '-';
+            const roi = parseFloat(document.getElementById('inv-roi').value) || 0;
+            const sumberId = document.getElementById('inv-sumber').value;
+            const tanggal = document.getElementById('inv-tanggal').value;
+            const nominalInv = parseFloat(document.getElementById('inv-nominal').value);
+
+            if(idForm) {
+                const invLama = dataInvestasi.find(i => i.id == idForm);
+                const dompetLama = dataDompet.find(d => d.id == invLama.sumberId);
+                const dompetBaru = dataDompet.find(d => d.id == sumberId);
+
+                if(dompetLama) dompetLama.nominal += invLama.nominal;
+                if(dompetBaru.nominal < nominalInv) {
+                    alert('Saldo di dompet tidak mencukupi untuk nominal baru ini!');
+                    if(dompetLama) dompetLama.nominal -= invLama.nominal; 
+                    return;
+                }
+                dompetBaru.nominal -= nominalInv;
+
+                invLama.nama = nama; invLama.perusahaan = perusahaan; invLama.platform = platform; 
+                invLama.jenis = jenis; invLama.tenor = tenor; invLama.roi = roi;
+                invLama.sumberId = sumberId; invLama.tanggal = tanggal; invLama.nominal = nominalInv;
+            } else {
+                const dompet = dataDompet.find(d => d.id == sumberId);
+                if(!dompet) { alert('Pilih atau buat sumber dana terlebih dahulu!'); return; }
+                if(dompet.nominal < nominalInv) { alert('Saldo di dompet tidak mencukupi!'); return; }
+                
+                dompet.nominal -= nominalInv;
+                dataInvestasi.push({ id: Date.now(), nama, perusahaan, platform, jenis, tenor, roi, sumberId, tanggal, nominal: nominalInv });
+            }
+
+            simpanData(); batalEditInvestasi(); updateUI();
+        });
+
+        function editInvestasi(id) {
+            const inv = dataInvestasi.find(i => i.id == id);
+            document.getElementById('inv-id').value = inv.id;
+            document.getElementById('inv-nama').value = inv.nama;
+            document.getElementById('inv-perusahaan').value = inv.perusahaan || '';
+            document.getElementById('inv-platform').value = inv.platform;
+            document.getElementById('inv-jenis').value = inv.jenis;
+            document.getElementById('inv-roi').value = inv.roi || 0;
+            
+            if(inv.jenis === 'Sukuk') {
+                document.getElementById('container-tenor').classList.remove('hidden');
+                document.getElementById('inv-tenor').value = inv.tenor;
+            } else {
+                document.getElementById('container-tenor').classList.add('hidden');
+            }
+
+            updateDropdownSumberDana(); 
+            document.getElementById('inv-sumber').value = inv.sumberId;
+            document.getElementById('inv-tanggal').value = inv.tanggal;
+            document.getElementById('inv-nominal').value = inv.nominal;
+            
+            document.getElementById('title-form-inv').innerText = "Edit Investasi";
+            document.getElementById('btn-submit-inv').innerText = "Update Investasi";
+            document.getElementById('btn-batal-inv').classList.remove('hidden');
+            checkWidgetPreview();
+        }
+
+        function hapusInvestasi(id) {
+            if(confirm('Hapus transaksi investasi ini? Uang pokok akan dikembalikan ke dompet terkait.')) {
+                const inv = dataInvestasi.find(i => i.id == id);
+                const dompet = dataDompet.find(d => d.id == inv.sumberId);
+                if(dompet) dompet.nominal += inv.nominal;
+                
+                dataInvestasi = dataInvestasi.filter(i => i.id != id);
+                simpanData(); updateUI();
+            }
+        }
+
+        function batalEditInvestasi() {
+            document.getElementById('form-investasi').reset();
+            document.getElementById('inv-id').value = '';
+            document.getElementById('container-tenor').classList.add('hidden');
+            document.getElementById('profit-preview').classList.add('hidden');
+            document.getElementById('title-form-inv').innerText = "Tambah Investasi";
+            document.getElementById('btn-submit-inv').innerText = "Simpan Investasi";
+            document.getElementById('btn-batal-inv').classList.add('hidden');
+        }
+
+        function simpanData() {
+            localStorage.setItem('dompet', JSON.stringify(dataDompet));
+            localStorage.setItem('investasi', JSON.stringify(dataInvestasi));
+        }
+
+        function updateDropdownSumberDana() {
+            const selectSumber = document.getElementById('inv-sumber');
+            selectSumber.innerHTML = '';
+            if(dataDompet.length === 0) {
+                selectSumber.innerHTML = '<option value="" disabled selected>Belum ada dompet</option>';
+            } else {
+                dataDompet.forEach(d => {
+                    selectSumber.innerHTML += `<option value="${d.id}">${d.nama} (${formatRupiah(d.nominal)})</option>`;
+                });
+            }
+        }
+
+        function generateTextLegend(elementId, dataObj) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            
+            let total = 0;
+            Object.values(dataObj).forEach(val => total += val);
+
+            if (total === 0 || Object.keys(dataObj).length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center text-xs py-2">Belum ada data distribusi</p>';
+                return;
+            }
+
+            let html = '<ul class="space-y-1.5 w-full mt-2">';
+            let index = 0;
+            for (const [key, value] of Object.entries(dataObj)) {
+                let percentage = ((value / total) * 100).toFixed(1);
+                let color = chartColors[index % chartColors.length];
+                html += `
+                    <li class="flex items-center justify-between text-[11px] text-gray-600">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${color}"></span>
+                            <span class="truncate font-medium">${key}</span>
+                        </div>
+                        <span class="font-semibold text-gray-900 ml-2">
+                            ${formatRupiah(value)} <span class="text-gray-400 font-normal text-[10px]">(${percentage}%)</span>
+                        </span>
+                    </li>
+                `;
+                index++;
+            }
+            html += `
+                <li class="flex items-center justify-between text-xs text-gray-900 border-t border-gray-200 pt-1.5 mt-1.5 font-bold">
+                    <span>Total Kategori</span>
+                    <span>${formatRupiah(total)}</span>
+                </li>
+            `;
+            html += '</ul>';
+            container.innerHTML = html;
+        }
+
+        function buatKonfigurasiDoughnut(labels, data) {
+            return {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: chartColors.slice(0, labels.length),
+                        borderWidth: 0, hoverOffset: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    cutout: '70%'
+                }
+            };
+        }
+
+        function renderAllCharts(platformObj, ptObj, dompetObj, cuanObj) {
+            Object.keys(charts).forEach(key => { if(charts[key]) charts[key].destroy(); });
+
+            charts.platform = new Chart(document.getElementById('chartPlatform').getContext('2d'), buatKonfigurasiDoughnut(Object.keys(platformObj), Object.values(platformObj)));
+            charts.pt = new Chart(document.getElementById('chartPT').getContext('2d'), buatKonfigurasiDoughnut(Object.keys(ptObj), Object.values(ptObj)));
+            charts.dompet = new Chart(document.getElementById('chartDompet').getContext('2d'), buatKonfigurasiDoughnut(Object.keys(dompetObj), Object.values(dompetObj)));
+            charts.keuntungan = new Chart(document.getElementById('chartKeuntungan').getContext('2d'), buatKonfigurasiDoughnut(Object.keys(cuanObj), Object.values(cuanObj)));
+
+            generateTextLegend('legendPlatform', platformObj);
+            generateTextLegend('legendPT', ptObj);
+            generateTextLegend('legendDompet', dompetObj);
+            generateTextLegend('legendKeuntungan', cuanObj);
+        }
+
+        // FUNGSI RENDER TABEL INVESTASI (DENGAN FITUR FILTER)
+        function renderTabelInvestasi() {
+            const tbodyInvestasi = document.getElementById('tabel-investasi');
+            tbodyInvestasi.innerHTML = '';
+            
+            const filterPlatform = document.getElementById('filter-platform').value;
+            const filterJenis = document.getElementById('filter-jenis').value;
+
+            // Proses Penyaringan Data
+            let filteredData = dataInvestasi.filter(inv => {
+                let matchPlatform = (filterPlatform === 'Semua' || inv.platform === filterPlatform);
+                let matchJenis = (filterJenis === 'Semua' || inv.jenis === filterJenis);
+                return matchPlatform && matchJenis;
+            });
+
+            if (filteredData.length === 0) {
+                tbodyInvestasi.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-gray-400 italic">Tidak ada histori yang cocok dengan filter.</td></tr>`;
+                return;
+            }
+
+            // Render Data yang sudah disaring
+            filteredData.forEach(inv => {
+                let cuan = kalkulasiCuanSukuk(inv.nominal, inv.roi, inv.jenis, inv.tenor);
+                let detailJenis = inv.jenis === 'Sukuk' ? `<span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs">Sukuk</span>` : `<span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-xs">Saham</span>`;
+                let detailTenor = inv.jenis === 'Sukuk' ? `${inv.tenor} Bln` : '-';
+
+                tbodyInvestasi.innerHTML += `
+                    <tr class="hover:bg-gray-50 transition border-b border-gray-50 last:border-0">
+                        <td class="py-3 px-4 text-gray-500 text-xs">${inv.tanggal}</td>
+                        <td class="py-3 px-4 font-medium text-gray-900">
+                            <div>${inv.nama}</div>
+                            <div class="text-xs text-gray-400 font-normal">${inv.perusahaan || '-'}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="font-semibold text-xs text-gray-700">${inv.platform}</span>
+                            <div class="mt-0.5">${detailJenis}</div>
+                        </td>
+                        <td class="py-3 px-4 text-xs">
+                            <div class="font-medium text-gray-700">${inv.roi}% / Tahun</div>
+                            <div class="text-gray-400">${detailTenor}</div>
+                        </td>
+                        <td class="py-3 px-4 text-gray-900 font-medium">${formatRupiah(inv.nominal)}</td>
+                        <td class="py-3 px-4 text-blue-600 font-semibold">${cuan > 0 ? formatRupiah(cuan) : '-'}</td>
+                        <td class="py-3 px-4 text-center">
+                            <button onclick="editInvestasi(${inv.id})" class="text-blue-500 hover:underline mr-2 text-xs">Edit</button>
+                            <button onclick="hapusInvestasi(${inv.id})" class="text-red-500 hover:underline text-xs">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // FUNGSI UPDATE UI (Memanggil render filter, dompet, dan diagram)
+        function updateUI() {
+            updateDropdownSumberDana();
+
+            // Render Dompet
+            const tbodyDompet = document.getElementById('tabel-dompet');
+            tbodyDompet.innerHTML = '';
+            let totalSaldoDompet = 0;
+            let alokasiDompetMap = {};
+
+            dataDompet.forEach(d => {
+                totalSaldoDompet += d.nominal;
+                alokasiDompetMap[d.nama] = 0; 
+                tbodyDompet.innerHTML += `
+                    <tr class="border-b border-gray-50 last:border-0">
+                        <td class="py-3 px-4 font-medium text-gray-900">${d.nama}</td>
+                        <td class="py-3 px-4 text-green-600 font-semibold">${formatRupiah(d.nominal)}</td>
+                        <td class="py-3 px-4 text-gray-500">${d.catatan || '-'}</td>
+                        <td class="py-3 px-4 text-center">
+                            <button onclick="editDompet(${d.id})" class="text-blue-500 hover:underline mr-2 text-xs">Edit</button>
+                            <button onclick="hapusDompet(${d.id})" class="text-red-500 hover:underline text-xs">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('total-dompet').innerText = formatRupiah(totalSaldoDompet);
+
+            // Hitung Agregasi Investasi untuk Ringkasan dan Chart
+            let totalPokokInvestasi = 0;
+            let totalCuanSukukAll = 0;
+
+            let platformData = { 'Shafiq': 0, 'LBS': 0 };
+            let ptData = {};
+            let keuntunganSukukData = {};
+
+            dataInvestasi.forEach(inv => {
+                let cuan = kalkulasiCuanSukuk(inv.nominal, inv.roi, inv.jenis, inv.tenor);
+                totalPokokInvestasi += inv.nominal;
+                totalCuanSukukAll += cuan;
+
+                if(platformData[inv.platform] !== undefined) platformData[inv.platform] += inv.nominal;
+                ptData[inv.perusahaan] = (ptData[inv.perusahaan] || 0) + inv.nominal;
+
+                if(inv.jenis === 'Sukuk' && cuan > 0) {
+                    keuntunganSukukData[inv.perusahaan] = (keuntunganSukukData[inv.perusahaan] || 0) + cuan;
+                }
+
+                const dompetTerkait = dataDompet.find(d => d.id == inv.sumberId);
+                if(dompetTerkait) {
+                    alokasiDompetMap[dompetTerkait.nama] = (alokasiDompetMap[dompetTerkait.nama] || 0) + inv.nominal;
+                }
+            });
+
+            document.getElementById('total-investasi').innerText = formatRupiah(totalPokokInvestasi);
+            document.getElementById('total-cuan').innerText = formatRupiah(totalCuanSukukAll);
+
+            // Perbarui visual diagram
+            renderAllCharts(platformData, ptData, alokasiDompetMap, keuntunganSukukData);
+            
+            // Render Tabel Investasi dengan memperhitungkan filter aktif
+            renderTabelInvestasi();
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
