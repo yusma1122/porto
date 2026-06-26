@@ -499,16 +499,25 @@
                 const invLama = dataInvestasi.find(i => i.id == idForm);
                 const dompetLama = dataDompet.find(d => d.id == invLama.sumberId);
                 const dompetBaru = dataDompet.find(d => d.id == sumberId);
+                const pokokSudahKembali = invLama.pokokDikembalikan;
 
-                if(dompetLama) dompetLama.nominal += invLama.nominal;
-                if(dompetBaru.nominal < nominalInv) {
-                    alert('Saldo di dompet tidak mencukupi untuk nominal baru ini!');
-                    if(dompetLama) dompetLama.nominal -= invLama.nominal; 
-                    return;
+                if(pokokSudahKembali) {
+                    if(dompetBaru.nominal < nominalInv) {
+                        alert('Saldo di dompet tidak mencukupi untuk nominal baru ini!');
+                        return;
+                    }
+                    dompetBaru.nominal -= (nominalInv - invLama.nominal);
+                } else {
+                    if(dompetLama) dompetLama.nominal += invLama.nominal;
+                    if(dompetBaru.nominal < nominalInv) {
+                        alert('Saldo di dompet tidak mencukupi untuk nominal baru ini!');
+                        if(dompetLama) dompetLama.nominal -= invLama.nominal;
+                        return;
+                    }
+                    dompetBaru.nominal -= nominalInv;
                 }
-                dompetBaru.nominal -= nominalInv;
 
-                invLama.nama = nama; invLama.perusahaan = perusahaan; invLama.platform = platform; 
+                invLama.nama = nama; invLama.perusahaan = perusahaan; invLama.platform = platform;
                 invLama.jenis = jenis; invLama.tenor = tenor; invLama.roi = roi;
                 invLama.sumberId = sumberId; invLama.tanggal = tanggal; invLama.nominal = nominalInv;
             } else {
@@ -551,11 +560,17 @@
         }
 
         function hapusInvestasi(id) {
-            if(confirm('Hapus transaksi investasi ini? Uang pokok akan dikembalikan ke dompet terkait.')) {
-                const inv = dataInvestasi.find(i => i.id == id);
-                const dompet = dataDompet.find(d => d.id == inv.sumberId);
-                if(dompet) dompet.nominal += inv.nominal;
-                
+            const inv = dataInvestasi.find(i => i.id == id);
+            if(!inv) return;
+            const sudahKembali = inv.pokokDikembalikan;
+            const msg = sudahKembali
+                ? 'Hapus transaksi investasi ini? (Pokok sudah dikembalikan saat selesai, jadi tidak ditambahkan lagi ke dompet.)'
+                : 'Hapus transaksi investasi ini? Uang pokok akan dikembalikan ke dompet terkait.';
+            if(confirm(msg)) {
+                if(!sudahKembali) {
+                    const dompet = dataDompet.find(d => d.id == inv.sumberId);
+                    if(dompet) dompet.nominal += inv.nominal;
+                }
                 dataInvestasi = dataInvestasi.filter(i => i.id != id);
                 simpanData(); updateUI();
             }
@@ -577,6 +592,11 @@
             document.getElementById('modal-inv-id').value = inv.id;
             const cuanEstimasi = kalkulasiCuanSukuk(inv.nominal, inv.roi, inv.jenis, inv.tenor);
             const jatuhTempo = getTanggalJatuhTempo(inv);
+            const dompet = dataDompet.find(d => d.id == inv.sumberId);
+            const dompetNama = dompet ? dompet.nama : '-';
+            const catatanPokok = inv.pokokDikembalikan
+                ? `<p class="text-gray-400 italic">Pokok sudah pernah dikembalikan ke dompet "${dompetNama}".</p>`
+                : `<p><span class="text-gray-400">Pokok dikembalikan ke:</span> <span class="font-medium text-green-700">${dompetNama} (${formatRupiah(inv.nominal)})</span></p>`;
             document.getElementById('info-sukuk-selesai').innerHTML = `
                 <p><span class="text-gray-400">Investasi:</span> <span class="font-medium text-gray-800">${inv.nama}</span></p>
                 <p><span class="text-gray-400">Perusahaan:</span> <span class="font-medium text-gray-800">${inv.perusahaan || '-'}</span></p>
@@ -585,6 +605,7 @@
                 <p><span class="text-gray-400">ROI/Tahun Estimasi:</span> <span class="font-medium text-gray-800">${inv.roi}% (≈ ${getRoiBulananEstimasi(inv)}% / bln)</span></p>
                 <p><span class="text-gray-400">Profit Estimasi:</span> <span class="font-medium text-blue-600">${formatRupiah(cuanEstimasi)}</span></p>
                 <p><span class="text-gray-400">Jatuh Tempo:</span> <span class="font-medium text-gray-800">${jatuhTempo.toLocaleDateString('id-ID')}</span></p>
+                ${catatanPokok}
             `;
             document.getElementById('modal-roi-realisasi').value = getRoiBulananEstimasi(inv);
             const today = new Date();
@@ -615,6 +636,15 @@
             inv.status = 'selesai';
             inv.roiRealisasi = parseFloat(document.getElementById('modal-roi-realisasi').value) || getRoiBulananEstimasi(inv);
             inv.tanggalSelesai = document.getElementById('modal-tanggal-selesai').value;
+
+            if(!inv.pokokDikembalikan) {
+                const dompet = dataDompet.find(d => d.id == inv.sumberId);
+                if(dompet) {
+                    dompet.nominal += inv.nominal;
+                    inv.pokokDikembalikan = true;
+                }
+            }
+
             simpanData();
             tutupModalSelesai();
             updateUI();
@@ -623,7 +653,12 @@
         function batalSelesai(id) {
             const inv = dataInvestasi.find(i => i.id == id);
             if(!inv) return;
-            if(confirm('Batalkan status selesai untuk sukuk ini?')) {
+            if(confirm('Batalkan status selesai untuk sukuk ini? Pokok akan ditarik kembali dari dompet.')) {
+                if(inv.pokokDikembalikan) {
+                    const dompet = dataDompet.find(d => d.id == inv.sumberId);
+                    if(dompet) dompet.nominal -= inv.nominal;
+                    delete inv.pokokDikembalikan;
+                }
                 inv.status = 'aktif';
                 delete inv.roiRealisasi;
                 delete inv.tanggalSelesai;
